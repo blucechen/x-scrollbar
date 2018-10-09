@@ -6,17 +6,20 @@
     </div>
   </div>
   <div class="xs-vertical-bar" :style="{
-      width: scrollBarH === 0?'0px': '6px', 
-      padding: addIndicator? '12px 0': '0'
-    }">
-    <Indicator v-if="addIndicator" direction="up" @press="toUp" class="indicator layoutTop"></Indicator>
+      width: scrollBarH === 0?'0px': `${barWidth}px`, 
+      padding: addIndicator? `${indicatorH}px 0`: '0'
+    }"
+    @click="barClick"
+    >
+    <Indicator v-if="addIndicator" @click.native.stop direction="up" @press="toUp" class="indicator layoutTop"></Indicator>
     <div 
       class="xs-vb-thumb"
       :style="{height: `${scrollBarH}%`, transform: `translateY(${translateY}%)`}"
       @mousedown="thumbMouseDown"
+      @click.stop
       >
     </div>
-    <Indicator v-if="addIndicator" direction="down" @press="toDown" class="indicator layoutBottom"></Indicator>
+    <Indicator v-if="addIndicator" @click.native.stop direction="down" @press="toDown" class="indicator layoutBottom"></Indicator>
   </div>
   <div class="xs-horizontal-bar"><div></div></div>
 </div>
@@ -30,29 +33,45 @@ export default {
     return {
       scrollBarH: 0,      // 相对容器的%高度
       translateY: 0,      //滑动自身的%高度
-      isShowThumb: false,
-      speed: 2
+      isShowThumb: false, 
     }
   },
   props: {
-    autoUpdata: {// 是否关闭自动更新进度条，如果外层容器高度不变化，建议关闭
+    /**
+     * 背景：外层容器高度变化，scrollbar无法检测，导致thumb位置和高度可能受到影响
+     * 建议：
+     * 1：外层容器高度不变： 设置autoUpdata为false；
+     * 2. 外层容器高度变化
+     *  2.1：设置autoUpdata为false，外层容器高度变化时候手动调用组件update方法
+     *  2.2：设置autoUpdata为true，则会在滚动的时候低频更新thumb的位置和高度
+     */
+    autoUpdata: {
       type: Boolean,
       default: true
     },
-    addIndicator: {// 是否添加指示器
+    addIndicator: {
       type: Boolean,
       default: false
+    },
+    indicatorH: {
+      type: Number,
+      default: 12
+    },
+    speed: {  // click indicator move instance
+      type: Number,
+      default: 2
+    },
+    barWidth: {
+      type: Number,
+      default: 6
     }
   },
   methods: {
-    /**
-     * 当外层容器高度发生变化时 建议：手动调用更新滚动条的高度(否则只能在滚动的时候才能修改滚动条位置和高度)
-     */
     update() {
       this.handleResize()
     },
     toUp() {
-      this.moveScrollBar(-speed)
+      this.moveScrollBar(-this.speed)
     },
     toDown() {
       this.moveScrollBar(this.speed)
@@ -60,8 +79,20 @@ export default {
     scroll() {
       this.handleScrollBarPos()
       if (this.autoUpdata) {
-        this.debounceHandleScrollBarH() // 无法自动检测容器高度，只能在滚动的时候更新（或者调用update）
+        this.debounceHandleScrollBarH() //updata thumb's height
       }
+    },
+    barClick(e) {// jump to pos
+      let clickPosY = this.addIndicator?e.layerY - this.indicatorH: e.layerY
+      let thumbPosY = this.translateY * this.scrollBarPxH / 100
+      let movePx = 0
+      movePx = clickPosY - thumbPosY
+      if (clickPosY < thumbPosY) {              // click pos above thumb
+        movePx = clickPosY - thumbPosY - 2      // prevent multi call barClick
+      } else {                                  // click pos under thumb
+        movePx = clickPosY - thumbPosY - this.scrollBarPxH + 2 // prevent multi call barClick
+      }
+      this.moveScrollBar(movePx)
     },
     debounceHandleScrollBarH: debounce(function(){this.handleScrollBarH()}, 500, {leading: true, trailing: false }),//头和尾，低频调用
     thumbMouseDown(e) {
@@ -70,7 +101,7 @@ export default {
       this.startY = e.clientY
       this.isShowThumb = true
     },
-    moveScrollBar(movePx) {// 同时联动内容
+    moveScrollBar(movePx) {// call this function will auto move content
       if (movePx > 0 && this.translateY === this.maxTranslateY)// prevent not use call (move down)
         return
       if (movePx < 0 && this.translateY === 0) // prevent not use call( move up)
@@ -108,8 +139,10 @@ export default {
       }
 
       let percentage = ~~((domWrapperH / domViewerH)*100)
-      this.scrollBarH = `${percentage < 3? 3: percentage}`                  // %高度
-      this.scrollBarPxH = domWrapperH * this.scrollBarH / 100               // px高度
+      this.scrollBarH = `${percentage < 3? 3: percentage}`                  // % 高度
+      // if add indicator, domWrapper's height is (domWrapperH - indicatorH)
+      domWrapperH = this.addIndicator? domWrapperH - 24: domWrapperH
+      this.scrollBarPxH = domWrapperH * this.scrollBarH / 100               // px 高度
       this.canScrollPxH = domWrapperH * (100 - this.scrollBarH) / 100       // 可滚动px高度
 
       this.maxTranslateY = (this.canScrollPxH / this.scrollBarPxH) * 100    // 滚动条可滑动的最大距离，以自身为基准 %
@@ -120,7 +153,7 @@ export default {
       let offsetH = domWrapper.offsetHeight
       let percentage = domWrapper.scrollTop / this.maxScrollPxH
 
-      // 采用transform 调用3d加速
+      // transform 3d turbo
       let actScrollH = this.canScrollPxH * percentage
       let res = actScrollH / this.scrollBarPxH
 
@@ -166,10 +199,8 @@ export default {
 
 </script>
 <style lang="scss">
-@mixin setWH($w, $h) {
-  width: $w;
-  height: $h;
-}
+@import "./../common/css/utils.scss";
+@import "./../common/css/fiMixin.scss";
 $bgColor: rgba(24,113,148,.7);
 .x-scrollbar {
   @include setWH(100%, 100%);
@@ -191,17 +222,19 @@ $bgColor: rgba(24,113,148,.7);
 .xs-wrapper {
   @include setWH(100%, 100%);
   overflow: scroll;
- 
 }
 .xs-vertical-bar {
-  position: absolute;
-  right: 1px;
-  top: 0;
+  @include setPos(absolute, right, 1px, top, 0);
+  cursor: pointer;
   padding: 12px 0;
   box-sizing: border-box;
   overflow: hidden;
   height: 100%;
   width: 6px;
+  transition: .3s background-color;
+  &:hover {
+    background-color: rgba(255, 255, 255, .1);
+  }
   .xs-vb-thumb {
     width: 100%;
     background-color: transparent;
@@ -210,11 +243,9 @@ $bgColor: rgba(24,113,148,.7);
     border-radius: 6px;
     cursor: pointer;
   }
-
 }
 .indicator {
-  position: absolute;
-  right: 1px;
+  @include setPos(absolute, right, 1px);
   width: 100%;
   &.layoutTop {
     top: 0px;

@@ -23,8 +23,7 @@ export default {
   },
   methods: {
     eMouseDown() {
-      this.$emit('press')
-      this.intervalId = setInterval((  )=> this.$emit('press'), 16)
+      this.startEmit()
     },
     eMouseUp() {
       this.stopEmit()
@@ -32,8 +31,12 @@ export default {
     eMouseLeave() {
       this.stopEmit()
     },
+    startEmit() {
+      this.$emit('press')
+      this.intervalId = window.requestAnimationFrame(this.eMouseDown)// elegance code
+    },
     stopEmit() {
-      clearInterval(this.intervalId)
+      window.cancelAnimationFrame(this.intervalId)
     }
   }
 }
@@ -41,11 +44,8 @@ export default {
 
 </script>
 <style lang="scss" scoped>
-
-@mixin setWH($w, $h) {
-  width: $w;
-  height: $h;
-}
+@import "./../common/css/utils.scss";
+@import "./../common/css/fiMixin.scss";
 $height: 7px;
 $width: 4px;
 $borderC: transparent;
@@ -59,9 +59,7 @@ $borderC: transparent;
   @include setWH(2*$width, 2*$height - 2px);
   &:before, &:after {
     content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
+    @include setPos(absolute, top, 0, left, 0);
     @include setWH(0, 0);
     transition: .3s border-color;
     border-left: $width dashed transparent;
