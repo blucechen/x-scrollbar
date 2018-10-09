@@ -1,0 +1,20 @@
+@mixin setWH($w, $h) {
+  width: $w;
+  height: $h;
+}
+
+@mixin setPos($val...) {
+  position: nth($list: $val, $n: 1);
+  @if length($list: $val) > 1 {
+    #{nth($val, 2)}: nth($val, 3);
+  }
+  @if length($list: $val) > 3 {
+    #{nth($val, 4)}: nth($val, 5);
+  }
+  @if length($list: $val) > 5 {
+    #{nth($val, 6)}: nth($val, 7);
+  }
+  @if length($list: $val) > 7 {
+    #{nth($val, 8)}: nth($val, 9);
+  }
+}

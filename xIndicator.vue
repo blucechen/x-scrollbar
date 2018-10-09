@@ -44,8 +44,7 @@ export default {
 
 </script>
 <style lang="scss" scoped>
-@import "./../common/css/utils.scss";
-@import "./../common/css/fiMixin.scss";
+@import "./utils.scss";
 $height: 7px;
 $width: 4px;
 $borderC: transparent;

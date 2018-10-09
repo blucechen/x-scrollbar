@@ -199,8 +199,7 @@ export default {
 
 </script>
 <style lang="scss">
-@import "./../common/css/utils.scss";
-@import "./../common/css/fiMixin.scss";
+@import "./utils.scss";
 $bgColor: rgba(24,113,148,.7);
 .x-scrollbar {
   @include setWH(100%, 100%);
