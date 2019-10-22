@@ -15,6 +15,6 @@
     #{nth($val, 6)}: nth($val, 7);
   }
   @if length($list: $val) > 7 {
-    #{nth($val, 8)}: nth($val, 9);
+    #{nth($val, 8)}: nth($val, 9)
   }
 }
